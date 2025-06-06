@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Area-Group Classifier</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #333;
+    }
+    h1 {
+      color: #5b9bd5;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 15px 0;
+      background: #2b2b2b;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #5b9bd5;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #4178be;
+    }
+    .result {
+      background: #2e2e2e;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 5px;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📍 Area-Group Classifier</h1>
+    <p>Enter a Victorian address:</p>
+    <input type="text" id="addressInput" placeholder="e.g. 1 Main St, Altona VIC" />
+    <button onclick="processAddress()">Check Area Group</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    const API_KEY = 'AIzaSyAgc6g-lthB8LrlNTFyJJB7CCZObhZbElo';
+
+    async function processAddress() {
+      const address = document.getElementById('addressInput').value;
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = 'Processing...';
+
+      try {
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+            address
+          )}&region=au&key=${API_KEY}`
+        );
+        const data = await response.json();
+        if (data.status !== 'OK') throw new Error('Invalid address');
+
+        const result = data.results[0];
+        const lat = result.geometry.location.lat;
+        const lng = result.geometry.location.lng;
+
+        let suburb = null;
+        for (const comp of result.address_components) {
+          if (comp.types.includes('locality')) {
+            suburb = comp.long_name.toLowerCase();
+            break;
+          }
+        }
+
+        if (!suburb) throw new Error('Suburb not found');
+
+        const group = getAreaGroup(suburb, lat, lng);
+
+        resultDiv.textContent = `📍 Suburb: ${suburb}\n🌐 Coordinates: (${lat.toFixed(6)}, ${lng.toFixed(6)})\n🏷 Area-Group: ${group}`;
+      } catch (error) {
+        resultDiv.textContent = 'Error: ' + error.message;
+      }
+    }
+
+    function isWithinBounds(lat, lng, lat1, lng1, lat2, lng2) {
+      return (
+        Math.min(lat1, lat2) <= lat &&
+        lat <= Math.max(lat1, lat2) &&
+        Math.min(lng1, lng2) <= lng &&
+        lng <= Math.max(lng1, lng2)
+      );
+    }
+
+    function getAreaGroup(suburb, lat, lng) {
+      const group_1_1 = new Set(['altona', 'altona north', 'seaholme', 'newport', 'williamstown', 'williamstown north', 'altona gate']);
+      const group_1_2 = new Set(['altona meadows', 'altona north', 'altona gate', 'altona south', 'altona west', 'altona east', 'altona central', 'altona north west', 'altona north east', 'altona south west', 'altona south east']);
+      const group_1_3 = new Set(['laverton', 'williams landing']);
+      const group_1_4 = new Set(['point cook', 'seabrook', 'point cook south', 'point cook west', 'point cook central', 'point cook north', 'point cook east']);
+      const group_1_5 = new Set(['melbourne', 'docklands', 'southbank', 'port melbourne', 'west melbourne', 'north melbourne', 'east melbourne', 'south melbourne', 'st kilda', 'st kilda west', 'elsternwick', 'elwood', 'brighton', 'bentleigh', 'bentleigh east', 'caulfield south', 'caulfield north', 'malvern east', 'malvern']);
+      const group_2_3 = new Set(['tarneit', 'werribee', 'wyndham vale', 'hoppers crossing', 'manor lakes', 'werribee south', 'geelong', 'corio', 'north geelong', 'bell park', 'bell post hill', 'lara', 'little river', 'ankers', 'moolap', 'newcomb', 'norlane', 'north shore', 'portarlington', 'drysdale', 'ocean grove', 'barwon heads']);
+      const group_2_4 = new Set(['deer park', 'melton', 'thornhill park', 'melton south', 'rockbank', 'brookfield', 'caroline springs', 'burnside', 'burnside heights', 'hillside', 'sydenham', 'taylors lakes', 'keilor downs', 'keilor lodge', 'keilor park', 'keilor east']);
+
+      if (group_1_1.has(suburb)) return '1-1';
+      if (group_1_2.has(suburb)) return '1-2';
+      if (group_1_3.has(suburb)) return '1-3';
+      if (group_1_4.has(suburb)) return '1-4';
+      if (group_2_3.has(suburb)) return '2-3';
+      if (group_2_4.has(suburb)) return '2-4';
+
+      if (suburb === 'truganina') {
+        if (isWithinBounds(lat, lng, -37.878851, 144.701958, -37.835683, 144.746203)) return '2-1';
+        if (isWithinBounds(lat, lng, -37.866371, 144.671488, -37.831535, 144.711485)) return '2-2';
+        if (isWithinBounds(lat, lng, -37.840754, 144.691572, 37.804550, 144.752855)) return '2-4';
+        return '2-4';
+      }
+
+      if (isWithinBounds(lat, lng, -37.833649, 144.539909, -37.833649, 144.539909)) return '2-4';
+      if (group_1_5.has(suburb) || suburb.includes('melbourne')) return '1-5';
+      return '1-5';
+    }
+  </script>
+</body>
+</html>
