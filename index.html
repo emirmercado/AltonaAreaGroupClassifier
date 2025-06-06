@@ -52,6 +52,8 @@
       white-space: pre-line;
     }
   </style>
+  <!-- Google Maps Places API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAgc6g-lthB8LrlNTFyJJB7CCZObhZbElo&libraries=places"></script>
 </head>
 <body>
   <div class="container">
@@ -64,6 +66,18 @@
 
   <script>
     const API_KEY = 'AIzaSyAgc6g-lthB8LrlNTFyJJB7CCZObhZbElo';
+
+    let autocomplete;
+    function initAutocomplete() {
+      const input = document.getElementById('addressInput');
+      autocomplete = new google.maps.places.Autocomplete(input, {
+        types: ['geocode'],
+        componentRestrictions: { country: 'au' }
+      });
+      autocomplete.addListener('place_changed', () => {
+        processAddress(); // auto-process on selection
+      });
+    }
 
     async function processAddress() {
       const address = document.getElementById('addressInput').value;
@@ -137,6 +151,8 @@
       if (group_1_5.has(suburb) || suburb.includes('melbourne')) return '1-5';
       return '1-5';
     }
+
+    window.addEventListener('load', initAutocomplete);
   </script>
 </body>
 </html>
